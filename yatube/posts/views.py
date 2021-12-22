@@ -50,11 +50,16 @@ def profile(request, username):
         and Follow.objects.filter(user=request.user, author=author).exists()
     ):
         following = True
+    if author == request.user:
+        author_is_user = True
+    else:
+        author_is_user = False
     context = {
         'page_obj': page_obj,
         'author': author,
         'post_list': post_list,
-        'following': following
+        'following': following,
+        'author_is_user': author_is_user
     }
     return render(request, 'posts/profile.html', context)
 
@@ -138,7 +143,8 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    Follow.objects.get_or_create(user=request.user, author=author)
+    if author != request.user:
+        Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('posts:profile', username=username)
 
 

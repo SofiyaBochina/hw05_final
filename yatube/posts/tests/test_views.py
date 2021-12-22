@@ -14,7 +14,8 @@ from ..models import Comment, Follow, Group, Post, User
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 TEST_SLUG = 'test-slug'
-TEST_USERNAME = 'auth'
+TEST_USERNAME = 'test-user'
+TEST_USERNAME_AUTHOR = 'test-author'
 
 INDEX = 'posts:index'
 POST_CREATE = 'posts:post_create'
@@ -42,6 +43,9 @@ class PostViewsTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username=TEST_USERNAME)
+        cls.author = User.objects.create_user(
+            username=TEST_USERNAME_AUTHOR
+        )
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug=TEST_SLUG,
@@ -73,9 +77,19 @@ class PostViewsTests(TestCase):
             reverse(POST_DETAIL, kwargs={'post_id': cls.post.id}),  # 3
             reverse(POST_EDIT, kwargs={'post_id': cls.post.id}),  # 4
             reverse(POST_CREATE),  # 5
-            reverse(PROFILE_FOLLOW, kwargs={'username': TEST_USERNAME}),  # 6
-            reverse(PROFILE_UNFOLLOW, kwargs={'username': TEST_USERNAME}),  # 7
-            reverse(FOLLOW_INDEX)  # 8
+            reverse(
+                PROFILE_FOLLOW,
+                kwargs={'username': TEST_USERNAME_AUTHOR}
+            ),  # 6
+            reverse(
+                PROFILE_UNFOLLOW,
+                kwargs={'username': TEST_USERNAME_AUTHOR}
+            ),  # 7
+            reverse(
+                PROFILE_FOLLOW,
+                kwargs={'username': TEST_USERNAME}
+            ),  # 8
+            reverse(FOLLOW_INDEX)  # 9
         ]
 
     def setUp(self):
@@ -165,29 +179,41 @@ class PostViewsTests(TestCase):
         """Возможность подписки."""
         self.authorized_client.post(self.reverses[6])
         self.assertTrue(
-            Follow.objects.filter(user=self.user, author=self.user).exists()
+            Follow.objects.filter(user=self.user, author=self.author).exists()
         )
 
     def test_user_can_unfollow(self):
         """Возможность отписки."""
         self.authorized_client.post(self.reverses[7])
         self.assertFalse(
+            Follow.objects.filter(user=self.user, author=self.author).exists()
+        )
+
+    def test_user_cant_follow_himself(self):
+        """Пользователь не может подписаться сам на себя."""
+        self.authorized_client.post(self.reverses[8])
+        self.assertFalse(
             Follow.objects.filter(user=self.user, author=self.user).exists()
         )
 
     def test_follow_index_for_follower(self):
         """Посты автора появляются в ленте тех, кто на него подписан."""
+        post_for_follow = Post.objects.create(
+            author=self.author,
+            text='Пост для проверки подписок',
+            group=self.group,
+        )
         self.authorized_client.post(self.reverses[6])
-        response = self.authorized_client.get(self.reverses[8])
+        response = self.authorized_client.get(self.reverses[9])
         self.assertEqual(
             response.context['page_obj'].object_list[0].text,
-            self.post.text
+            post_for_follow.text
         )
 
     def test_follow_index_for_not_follower(self):
         """Посты автора не появляются в ленте тех, кто на него не подписан."""
         self.authorized_client.post(self.reverses[7])
-        response = self.authorized_client.get(self.reverses[8])
+        response = self.authorized_client.get(self.reverses[9])
         self.assertNotIn(self.post, response.context['page_obj'])
 
     def test_paginator_and_context_on_pages_with_paginator(self):
