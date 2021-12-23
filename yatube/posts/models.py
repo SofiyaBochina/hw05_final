@@ -49,7 +49,10 @@ class Post(models.Model):
 
 
 class Comment(models.Model):
-    text = models.TextField('Текст', help_text='Введите текст коммментария')
+    text = models.TextField(
+        'Текст комментария',
+        help_text='Введите текст комментария'
+    )
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -78,9 +81,20 @@ class Follow(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
+        unique=True,
         related_name='following',
         verbose_name='Автор, на которого подписались'
     )
 
     def __str__(self):
         return str(self.user)
+# проверка на то,
+# что пользователь не может подписаться сам на себя, есть во вьюхах и в шаблоне
+
+# также хочу тут добавить, что после того,
+# как проект пройдёт все ревью,
+# я хочу добавить тесты для всех остальных приложений,
+# а так же заполнить страницы about и tech
+
+# так что они обязательно будут,
+# просто хочется успеть закончить спринты до 26-го))

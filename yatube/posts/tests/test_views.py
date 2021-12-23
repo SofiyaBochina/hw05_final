@@ -161,10 +161,7 @@ class PostViewsTests(TestCase):
             post=self.post,
         )
         response = self.authorized_client.get(self.reverses[3])
-        self.assertEqual(
-            response.context['comments'][0],
-            test_comment
-        )
+        self.assertContains(response, test_comment.text)
 
     def test_cache_index(self):
         """Кэширование сохраняет контент на 20 секунд."""
