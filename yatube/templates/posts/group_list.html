@@ -3,12 +3,12 @@
 Записи сообщества {{ group.title }}
 {% endblock %}
 {% block content %}
-<div class="card-header">
-  {% block header %}
-  {{ group.title }}
-  {% endblock %}
-</div>
 <div class="container py-5">
+  <div class="card-header">
+    {% block header %}
+    {{ group.title }}
+    {% endblock %}
+  </div>
   <p>{{ group.description }}</p>
   {% for post in page_obj %}
     <article>
